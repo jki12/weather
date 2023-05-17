@@ -2,31 +2,37 @@ package greenB.weather;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.lang.NonNull;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 
 public class Util {
     private static final StringBuilder SB = new StringBuilder();
 
-    public static String getFormattedDate(@NonNull OffsetDateTime date)
-    {
-        SB.setLength(0); // init.
+    public static String getFormattedDate() { // url part.
+        // 02:10, 05:10, 08:10, 11:10, 14:10, 17:10, 20:10, 23:10
 
-        SB.append(date.getYear());
-        if (date.getMonthValue() < 10) {
-            SB.append(0);
+        SB.setLength(0);
+
+        var now = OffsetDateTime.now();
+        var baseDate = OffsetDateTime.of(now.getYear(), now.getMonthValue(), now.getDayOfMonth(), 23, 10, 0, 0, now.getOffset());
+
+        while (now.compareTo(baseDate) == -1) {
+            baseDate = baseDate.minusHours(3);
         }
-        SB.append(date.getMonthValue());
-        if (date.getDayOfMonth() < 10) {
-            SB.append(0);
-        }
-        SB.append(date.getDayOfMonth());
+
+        // append date.
+        SB.append("&base_date=");
+        SB.append(String.format("%d%02d%02d", baseDate.getYear(), baseDate.getMonthValue(), baseDate.getDayOfMonth()));
+
+        // append time.
+        SB.append("&base_time=");
+        SB.append(String.format("%02d%02d", baseDate.getHour(), baseDate.getMinute()));
 
         return SB.toString();
     }
@@ -37,14 +43,14 @@ public class Util {
     public static String getWeatherData() {
         SB.setLength(0);
 
-        var urlBuilder = new StringBuilder("http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst");
+        var urlBuilder = new StringBuilder("http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst");
+        var now = OffsetDateTime.now();
 
         urlBuilder.append("?serviceKey=" + Key.KEY);
         urlBuilder.append("&dataType=" + "JSON");
-        urlBuilder.append("&numOfRows=" + "10");
+        urlBuilder.append("&numOfRows=" + "240");
         urlBuilder.append("&pageNo=" + "1");
-        urlBuilder.append("&base_date=" + getFormattedDate(OffsetDateTime.now()));
-        urlBuilder.append("&base_time=" + "0600"); // 임시값으로 0600으로 넣어두었음.
+        urlBuilder.append(getFormattedDate());
         urlBuilder.append("&nx=" + "98");
         urlBuilder.append("&ny=" + "78");
 
@@ -71,9 +77,23 @@ public class Util {
             conn.disconnect();
         }
         catch (Exception e) {
-            System.err.println("error : getWeatherData");
+            e.printStackTrace();
 
-            return "";
+            SB.setLength(0);
+        }
+
+        return SB.toString();
+    }
+
+    public static String parse(String json) {
+        SB.setLength(0);
+
+        for (int i = json.indexOf('['); i < json.length(); ++i) {
+            SB.append(json.charAt(i));
+
+            if (json.charAt(i) == ']') {
+                break;
+            }
         }
 
         return SB.toString();
@@ -83,22 +103,14 @@ public class Util {
     {
         var list = new ArrayList<WeatherDto>();
 
-        if (json.equals("")) {
+        SB.setLength(0);
+
+        if (json.isEmpty() || json.indexOf('[') == -1) {
             return list;
         }
 
-        SB.setLength(0);
-
         try {
-            for (int i = json.indexOf('['); i < json.length(); ++i) { // indexOf return value?
-                SB.append(json.charAt(i));
-
-                if (json.charAt(i) == ']') {
-                    break;
-                }
-            }
-
-            String parsedJson = SB.toString();
+            String parsedJson = parse(json);
             var objectMapper = new ObjectMapper();
 
             list = objectMapper.readValue(parsedJson, new TypeReference<ArrayList<WeatherDto>>() {});

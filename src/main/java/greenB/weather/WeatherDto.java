@@ -1,5 +1,8 @@
 package greenB.weather;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class WeatherDto {
     private String baseDate;
     private String baseTime;
@@ -7,6 +10,8 @@ public class WeatherDto {
     private int nx;
     private int ny;
     private String obsrValue;
+    public String fcstTime;
+    public String fcstValue;
 
     public String getBaseDate() {
         return baseDate;

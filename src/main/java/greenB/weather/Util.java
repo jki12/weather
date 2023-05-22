@@ -46,7 +46,7 @@ public class Util {
         var urlBuilder = new StringBuilder("http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst");
         var now = OffsetDateTime.now();
 
-        urlBuilder.append("?serviceKey=" + Key.KEY);
+        urlBuilder.append("?serviceKey=" +"nMDIzLI5guCbqJ%2FqFtThPQXPEFsHbzG8B5EEerymAoOlGr3dScg%2FQqsrnxgvmLyysNRr8nvS85UwcUL0mZoKaA%3D%3D");
         urlBuilder.append("&dataType=" + "JSON");
         urlBuilder.append("&numOfRows=" + "240");
         urlBuilder.append("&pageNo=" + "1");
